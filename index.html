@@ -165,8 +165,18 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" defer></script>
 </head>
 
-<body class="w-full max-w-full bg-brand-bg text-brand-text">
+<body class="w-full max-w-full bg-brand-bg text-brand-text overflow-hidden">
 
+  <!-- =========================================
+       PRELOADER
+       ========================================= -->
+  <div id="preloader" class="fixed inset-0 z-[200] bg-brand-bg flex flex-col items-center justify-center">
+    <div class="text-sm font-mono uppercase tracking-widest text-brand-text mb-4">SYSTEM BOOT</div>
+    <div class="w-48 h-px bg-brand-border overflow-hidden relative">
+      <div id="progress-bar" class="absolute top-0 left-0 h-full bg-brand-text w-0"></div>
+    </div>
+    <div id="progress-text" class="text-xs font-mono mt-4 text-brand-muted">0%</div>
+  </div>
   <!-- TOP NAVIGATION (Flat, Bordered) -->
   <nav class="fixed top-0 w-full z-40 bg-brand-bg/90 backdrop-blur-md border-b border-grid">
     <div class="w-full max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between">
@@ -658,23 +668,47 @@
        });
     });
 
-    // 3. GSAP Motion Orchestration (Elegant, strict reveals)
+    // 3. GSAP Motion Orchestration & Preloader
     window.addEventListener('load', () => {
       gsap.registerPlugin(ScrollTrigger);
 
-      // Hero Elements Staggered Fade & Slide up
-      gsap.fromTo('.gsap-hero', 
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, duration: 1.2, ease: "power3.out", stagger: 0.1 }
-      );
+      // Simulate loading progress
+      let progress = { val: 0 };
+      gsap.to(progress, {
+        val: 100,
+        duration: 2.2,
+        ease: "power2.inOut",
+        onUpdate: function() {
+          document.getElementById('progress-bar').style.width = progress.val + '%';
+          document.getElementById('progress-text').innerText = Math.round(progress.val) + '%';
+        },
+        onComplete: function() {
+          // Slide up the preloader
+          gsap.to('#preloader', {
+            yPercent: -100,
+            duration: 1.2,
+            ease: "power4.inOut",
+            onComplete: () => {
+              document.body.classList.remove('overflow-hidden');
+              ScrollTrigger.refresh();
+            }
+          });
 
-      // Lines reveal using clip path
-      const elements = gsap.utils.toArray('.gs-reveal');
-      elements.forEach((elem, i) => {
-        gsap.fromTo(elem, 
-          { opacity: 0, y: 30 },
-          { opacity: 1, y: 0, duration: 1.2, delay: i * 0.1, ease: "power3.out" }
-        );
+          // Hero Elements Staggered Fade & Slide up
+          gsap.fromTo('.gsap-hero', 
+            { opacity: 0, y: 40 },
+            { opacity: 1, y: 0, duration: 1.2, delay: 0.4, ease: "power3.out", stagger: 0.1 }
+          );
+
+          // Lines reveal using clip path
+          const elements = gsap.utils.toArray('.gs-reveal');
+          elements.forEach((elem, i) => {
+            gsap.fromTo(elem, 
+              { opacity: 0, y: 30 },
+              { opacity: 1, y: 0, duration: 1.2, delay: 0.4 + (i * 0.1), ease: "power3.out" }
+            );
+          });
+        }
       });
 
       // Scroll reveals
